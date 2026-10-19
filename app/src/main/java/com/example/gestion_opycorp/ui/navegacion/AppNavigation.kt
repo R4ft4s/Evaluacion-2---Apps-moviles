@@ -1,5 +1,10 @@
 package com.example.gestion_opycorp.ui.navegacion
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -44,7 +49,31 @@ fun AppNavigation() {
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
             navController = navController,
-            startDestination = "login"
+            startDestination = "login",
+            enterTransition = {
+                fadeIn(animationSpec = tween(350)) + slideInHorizontally(
+                    initialOffsetX = { it },
+                    animationSpec = tween(350)
+                )
+            },
+            exitTransition = {
+                fadeOut(animationSpec = tween(350)) + slideOutHorizontally(
+                    targetOffsetX = { -it / 3 },
+                    animationSpec = tween(350)
+                )
+            },
+            popEnterTransition = {
+                fadeIn(animationSpec = tween(350)) + slideInHorizontally(
+                    initialOffsetX = { -it / 3 },
+                    animationSpec = tween(350)
+                )
+            },
+            popExitTransition = {
+                fadeOut(animationSpec = tween(350)) + slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = tween(350)
+                )
+            }
         ) {
             // 1. Iniciar sesión
             composable("login") {
@@ -117,7 +146,7 @@ fun AppNavigation() {
             modifier = Modifier.align(Alignment.BottomStart)
         ) {
             Text(
-                text = "v1.2",
+                text = "v1.3",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
