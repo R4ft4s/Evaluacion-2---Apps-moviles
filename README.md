@@ -13,6 +13,9 @@
 - **[Marco Palma]**
 
 ---
+##  Trello
+- Link: https://trello.com/invite/b/6ad69621eb29d13a1d8b9bc1/ATTIeff973af1e7baf6c008ad2ae7eb193efDECF0D3C/opycorp-gestion-de-oportunidades
+---
 
 ## 📌 Descripción del Proyecto
 
