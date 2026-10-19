@@ -2,15 +2,12 @@ package com.example.gestion_opycorp.ui.oportunidad
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Matrix
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -32,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +37,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,8 +52,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import java.io.ByteArrayOutputStream
-import java.nio.ByteBuffer
+import java.io.File
 import java.util.concurrent.Executors
 
 @Composable
@@ -122,7 +120,14 @@ fun CameraCaptureDialog(
 
             if (hasCameraPermission) {
                 var imageCapture: ImageCapture? by remember { mutableStateOf(null) }
+                var isCapturing by remember { mutableStateOf(false) }
                 val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+
+                DisposableEffect(Unit) {
+                    onDispose {
+                        cameraExecutor.shutdown()
+                    }
+                }
 
                 Box(
                     modifier = Modifier
@@ -135,25 +140,34 @@ fun CameraCaptureDialog(
                             val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
 
                             cameraProviderFuture.addListener({
-                                val cameraProvider = cameraProviderFuture.get()
-                                val preview = Preview.Builder().build().also {
-                                    it.setSurfaceProvider(previewView.surfaceProvider)
-                                }
-
-                                val capture = ImageCapture.Builder()
-                                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                                    .build()
-                                    .also { imageCapture = it }
-
                                 try {
+                                    val cameraProvider = cameraProviderFuture.get()
+                                    val preview = Preview.Builder().build().also {
+                                        it.setSurfaceProvider(previewView.surfaceProvider)
+                                    }
+
+                                    val capture = ImageCapture.Builder()
+                                        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                                        .build()
+                                        .also { imageCapture = it }
+
+                                    val cameraSelector = if (cameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA)) {
+                                        CameraSelector.DEFAULT_BACK_CAMERA
+                                    } else if (cameraProvider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA)) {
+                                        CameraSelector.DEFAULT_FRONT_CAMERA
+                                    } else {
+                                        CameraSelector.DEFAULT_BACK_CAMERA
+                                    }
+
                                     cameraProvider.unbindAll()
                                     cameraProvider.bindToLifecycle(
                                         lifecycleOwner,
-                                        CameraSelector.DEFAULT_BACK_CAMERA,
+                                        cameraSelector,
                                         preview,
                                         capture
                                     )
-                                } catch (_: Exception) {
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
                                 }
                             }, ContextCompat.getMainExecutor(ctx))
 
@@ -172,10 +186,11 @@ fun CameraCaptureDialog(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Return / Cancel button right inside the camera screen
+                        // Return / Cancel button
                         Button(
                             onClick = onDismiss,
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(8.dp),
+                            enabled = !isCapturing
                         ) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                             Spacer(modifier = Modifier.width(4.dp))
@@ -185,34 +200,60 @@ fun CameraCaptureDialog(
                         // Capture photo button
                         FloatingActionButton(
                             onClick = {
-                                val capture = imageCapture ?: return@FloatingActionButton
+                                if (isCapturing) return@FloatingActionButton
+                                val capture = imageCapture ?: run {
+                                    Toast.makeText(context, "Cámara no lista aún", Toast.LENGTH_SHORT).show()
+                                    return@FloatingActionButton
+                                }
+                                isCapturing = true
+
+                                val photoFile = File(
+                                    context.filesDir,
+                                    "evidencia_${System.currentTimeMillis()}.jpg"
+                                )
+                                val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+
                                 capture.takePicture(
+                                    outputOptions,
                                     cameraExecutor,
-                                    object : ImageCapture.OnImageCapturedCallback() {
-                                        override fun onCaptureSuccess(image: ImageProxy) {
-                                            val bitmap = imageProxyToBitmap(image)
-                                            image.close()
-                                            if (bitmap != null) {
-                                                val base64 = bitmapToBase64(bitmap)
-                                                onPhotoCaptured(base64)
+                                    object : ImageCapture.OnImageSavedCallback {
+                                        override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                                            ContextCompat.getMainExecutor(context).execute {
+                                                isCapturing = false
+                                                onPhotoCaptured(photoFile.absolutePath)
                                             }
                                         }
 
                                         override fun onError(exception: ImageCaptureException) {
-                                            // Handle error
+                                            ContextCompat.getMainExecutor(context).execute {
+                                                isCapturing = false
+                                                Toast.makeText(
+                                                    context,
+                                                    "Error al capturar foto: ${exception.message}",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
                                         }
                                     }
                                 )
                             },
-                            containerColor = MaterialTheme.colorScheme.primary,
+                            containerColor = if (isCapturing) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
                             shape = CircleShape
                         ) {
-                            Icon(
-                                Icons.Default.Camera,
-                                contentDescription = "Capturar foto",
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(32.dp)
-                            )
+                            if (isCapturing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = MaterialTheme.colorScheme.onSecondary,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.Camera,
+                                    contentDescription = "Capturar foto",
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -239,24 +280,3 @@ fun CameraCaptureDialog(
     }
 }
 
-private fun imageProxyToBitmap(image: ImageProxy): Bitmap? {
-    val buffer: ByteBuffer = image.planes[0].buffer
-    val bytes = ByteArray(buffer.remaining())
-    buffer.get(bytes)
-    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-    
-    val rotationDegrees = image.imageInfo.rotationDegrees
-    return if (rotationDegrees != 0) {
-        val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
-        Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-    } else {
-        bitmap
-    }
-}
-
-private fun bitmapToBase64(bitmap: Bitmap): String {
-    val outputStream = ByteArrayOutputStream()
-    bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
-    val byteArray = outputStream.toByteArray()
-    return android.util.Base64.encodeToString(byteArray, android.util.Base64.DEFAULT)
-}

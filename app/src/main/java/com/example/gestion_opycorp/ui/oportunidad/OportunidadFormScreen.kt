@@ -12,6 +12,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -61,12 +63,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -472,7 +477,7 @@ fun OportunidadFormScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         if (uiState.fotoPath.isNotBlank()) {
-                            val bitmap = base64ToBitmap(uiState.fotoPath)
+                            val bitmap = remember(uiState.fotoPath) { cargarBitmap(uiState.fotoPath) }
                             if (bitmap != null) {
                                 Box(
                                     modifier = Modifier
@@ -483,11 +488,20 @@ fun OportunidadFormScreen(
                                     Image(
                                         bitmap = bitmap.asImageBitmap(),
                                         contentDescription = "Foto evidencia",
-                                        modifier = Modifier.fillMaxSize()
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(RoundedCornerShape(8.dp))
                                     )
                                     IconButton(
                                         onClick = { viewModel.onFotoPathChanged("") },
-                                        modifier = Modifier.align(Alignment.TopEnd)
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(8.dp)
+                                            .background(
+                                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                                                shape = CircleShape
+                                            )
                                     ) {
                                         Icon(
                                             Icons.Default.Delete,
@@ -538,6 +552,31 @@ fun OportunidadFormScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
+    }
+}
+
+private fun cargarBitmap(fotoPath: String): Bitmap? {
+    if (fotoPath.isBlank()) return null
+    return try {
+        val file = File(fotoPath)
+        if (file.exists()) {
+            val options = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            BitmapFactory.decodeFile(fotoPath, options)
+            var sampleSize = 1
+            while (options.outWidth / sampleSize > 1024 || options.outHeight / sampleSize > 1024) {
+                sampleSize *= 2
+            }
+            val decodeOptions = BitmapFactory.Options().apply {
+                inSampleSize = sampleSize
+            }
+            BitmapFactory.decodeFile(fotoPath, decodeOptions)
+        } else {
+            base64ToBitmap(fotoPath)
+        }
+    } catch (_: Exception) {
+        null
     }
 }
 
