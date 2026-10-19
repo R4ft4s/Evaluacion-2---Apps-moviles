@@ -28,6 +28,7 @@ import androidx.navigation.navArgument
 import com.example.gestion_opycorp.datos.local.AppDatabase
 import com.example.gestion_opycorp.datos.repository.OportunidadRepository
 import com.example.gestion_opycorp.ui.auth.LoginScreen
+import com.example.gestion_opycorp.ui.auth.RegisterScreen
 import com.example.gestion_opycorp.ui.menu.MenuScreen
 import com.example.gestion_opycorp.ui.oportunidad.ListaOportunidadesScreen
 import com.example.gestion_opycorp.ui.oportunidad.OportunidadFormScreen
@@ -82,11 +83,28 @@ fun AppNavigation() {
                         navController.navigate("menu/${usuarioNombre.ifBlank { "Ejecutivo Comercial" }}") {
                             popUpTo("login") { inclusive = true }
                         }
+                    },
+                    onNavigateToRegister = {
+                        navController.navigate("register")
                     }
                 )
             }
 
-            // 2. Menú principal
+            // 2. Registro de Usuario Nuevo
+            composable("register") {
+                RegisterScreen(
+                    onRegisterSuccess = { usuarioNombre ->
+                        navController.navigate("menu/${usuarioNombre.ifBlank { "Nuevo Usuario" }}") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    },
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            // 3. Menú principal
             composable(
                 route = "menu/{usuario}",
                 arguments = listOf(navArgument("usuario") { type = NavType.StringType })
@@ -109,7 +127,7 @@ fun AppNavigation() {
                 )
             }
 
-            // 3. Lista de Oportunidades
+            // 4. Lista de Oportunidades
             composable("lista_oportunidades") {
                 ListaOportunidadesScreen(
                     viewModel = oportunidadViewModel,
@@ -122,7 +140,7 @@ fun AppNavigation() {
                 )
             }
 
-            // 4. Formulario de Oportunidad (Crear / Editar)
+            // 5. Formulario de Oportunidad (Crear / Editar)
             composable(
                 route = "form_oportunidad/{id}",
                 arguments = listOf(navArgument("id") { type = NavType.IntType })
@@ -146,7 +164,7 @@ fun AppNavigation() {
             modifier = Modifier.align(Alignment.BottomStart)
         ) {
             Text(
-                text = "v1.3",
+                text = "v1.4",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)

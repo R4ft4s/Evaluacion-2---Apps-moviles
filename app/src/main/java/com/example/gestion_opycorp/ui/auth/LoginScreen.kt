@@ -1,10 +1,9 @@
 package com.example.gestion_opycorp.ui.auth
 
+import android.util.Patterns
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -49,10 +48,11 @@ import com.example.gestion_opycorp.R
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: (String) -> Unit
+    onLoginSuccess: (String) -> Unit,
+    onNavigateToRegister: () -> Unit
 ) {
-    var email by remember { mutableStateOf("ejecutivo@atenas.cl") }
-    var password by remember { mutableStateOf("123456") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -149,7 +149,8 @@ fun LoginScreen(
                         Text(
                             text = errorMessage ?: "",
                             color = MaterialTheme.colorScheme.error,
-                            fontSize = 12.sp
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center
                         )
                     }
 
@@ -157,10 +158,18 @@ fun LoginScreen(
 
                     Button(
                         onClick = {
-                            if (email.isBlank() || password.isBlank()) {
-                                errorMessage = "Por favor ingrese correo y contraseña."
-                            } else {
-                                onLoginSuccess(email)
+                            when {
+                                email.isBlank() -> errorMessage = "Por favor ingrese su correo electrónico."
+                                !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> errorMessage = "Formato de correo electrónico inválido."
+                                password.isBlank() -> errorMessage = "Por favor ingrese su contraseña."
+                                else -> {
+                                    val user = UserStore.authenticate(email, password)
+                                    if (user != null) {
+                                        onLoginSuccess(user.nombre)
+                                    } else {
+                                        errorMessage = "Correo o contraseña incorrectos, o cuenta no registrada."
+                                    }
+                                }
                             }
                         },
                         modifier = Modifier
@@ -173,40 +182,24 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(
-                        text = "Accesos rápidos de prueba:",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    OutlinedButton(
+                        onClick = onNavigateToRegister,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(46.dp),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        OutlinedButton(
-                            onClick = {
-                                email = "ejecutivo@atenas.cl"
-                                password = "demo"
-                                onLoginSuccess("Ejecutivo Comercial")
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Ejecutivo", fontSize = 12.sp)
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                email = "supervisor@atenas.cl"
-                                password = "demo"
-                                onLoginSuccess("Supervisor Comercial")
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Supervisor", fontSize = 12.sp)
-                        }
+                        Text(text = "¿No tienes cuenta? Regístrate aquí", fontSize = 14.sp)
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Cuenta Demo: ejecutivo@atenas.cl / demo123",
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    )
                 }
             }
         }
