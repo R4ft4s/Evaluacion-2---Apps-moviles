@@ -81,6 +81,7 @@ fun OportunidadFormScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     var showQrScanner by remember { mutableStateOf(false) }
+    var showCameraCapture by remember { mutableStateOf(false) }
 
     LaunchedEffect(oportunidadId) {
         viewModel.cargarOportunidadParaEditar(oportunidadId)
@@ -122,28 +123,6 @@ fun OportunidadFormScreen(
     val opcionesPrioridad = listOf("Alta", "Media", "Baja")
     val opcionesPotencial = listOf("Alto", "Medio", "Bajo")
 
-    // Camera launcher
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap ->
-        if (bitmap != null) {
-            val base64 = bitmapToBase64(bitmap)
-            viewModel.onFotoPathChanged(base64)
-            Toast.makeText(context, "Evidencia fotográfica capturada", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    // Permission launcher for camera
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            cameraLauncher.launch()
-        } else {
-            Toast.makeText(context, "Permiso de cámara denegado", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     // Permission launcher for Location
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -169,6 +148,15 @@ fun OportunidadFormScreen(
                 Toast.makeText(context, "QR Escaneado: $scannedValue", Toast.LENGTH_LONG).show()
             },
             onDismiss = { showQrScanner = false }
+        )
+    } else if (showCameraCapture) {
+        CameraCaptureDialog(
+            onPhotoCaptured = { base64 ->
+                showCameraCapture = false
+                viewModel.onFotoPathChanged(base64)
+                Toast.makeText(context, "Evidencia fotográfica capturada", Toast.LENGTH_SHORT).show()
+            },
+            onDismiss = { showCameraCapture = false }
         )
     } else {
         Scaffold(
@@ -514,7 +502,7 @@ fun OportunidadFormScreen(
 
                         OutlinedButton(
                             onClick = {
-                                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                showCameraCapture = true
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
