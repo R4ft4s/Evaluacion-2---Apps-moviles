@@ -3,18 +3,20 @@
 **Asignatura:** DSY1105 · Desarrollo de Aplicaciones Móviles  
 **Institución:** Duoc UC - Escuela de Informática y Telecomunicaciones  
 **Caso de Estudio:** DSY1105_007D - Agencia de Marketing Directo y Gestión de Beneficios Corporativos  
-**Versión de la App:** 1.2  
+**Versión de la App:** 1.5  
 
 ---
 
 ## 👥 Integrantes del Equipo 5
 
-- **[Joaquin Diez]**
-- **[Marco Palma]**
+- Joaquin Diez
+- Marco Palma
 
 ---
-##  Trello
-- Link: https://trello.com/b/NwGWgOoB/opycorp-gestion-de-oportunidades
+
+## 🔗 Trello del Proyecto
+- **Link Board:** [https://trello.com/b/NwGWgOoB/opycorp-gestion-de-oportunidades](https://trello.com/b/NwGWgOoB/opycorp-gestion-de-oportunidades)
+
 ---
 
 ## 📌 Descripción del Proyecto
@@ -27,18 +29,27 @@ El objetivo principal es resolver la dispersión de información y la falta de a
 
 ## 🚀 Funcionalidades Implementadas
 
-### 1. Autenticación e Identificación
-- Pantalla de inicio de sesión (*LoginScreen*) con credenciales del ejecutivo comercial.
-- Control de sesión e integración de nombre del usuario en la interfaz.
+### 1. Identidad Visual y Marca Corporativa
+- **Paleta de Colores Personalizada:** Aplicación del tema de marca oficial utilizando la paleta compuesta por:
+  - Azul Pizarra (`#4C6793`) como color Primario.
+  - Púrpura Profundo (`#5C2E7E`) como color Secundario.
+  - Celeste Suave (`#8BBCCC`) como color Terciario.
+  - Negro Puro (`#000000`) y tonos neutros de alto contraste para superficies y fondos.
+- **Logotipo e Iconografía:** Integración del logotipo e imagotipo corporativo `logo.png` (Gestión Atenea) en la pantalla de inicio de sesión (*LoginScreen*), encabezado del menú principal (*MenuScreen*) y como icono oficial de la aplicación (*Launcher Icon*).
 
-### 2. Menú Principal (*MenuScreen*)
-- Panel de bienvenida personalizado.
+### 2. Autenticación e Identificación
+- Pantalla de inicio de sesión (*LoginScreen*) con credenciales del ejecutivo comercial y supervisor.
+- Control de sesión e integración del nombre del usuario en la interfaz.
+
+### 3. Menú Principal (*MenuScreen*)
+- Panel de bienvenida personalizado con el logotipo institucional.
+- Métricas rápidas con contadores dinámicos de oportunidades totales, alta prioridad y confirmadas.
 - Accesos directos para la navegación hacia el listado y registro de oportunidades.
 - Opción para cerrar sesión (*Logout*).
 
-### 3. Módulo de Oportunidades
+### 4. Módulo de Oportunidades
 - **Listado de Oportunidades (*ListaOportunidadesScreen*):**
-  - Muestra la lista de eventos u oportunidades almacenadas localmente.
+  - Muestra la lista de eventos u oportunidades almacenadas localmente en Room.
   - **Filtros por Prioridad:** Chips de filtrado dinámico (Todas, Alta, Media, Baja).
   - **Búsqueda en tiempo real:** Por nombre, tipo o fuente de información.
   - Badges e indicadores visuales de prioridad, estado de gestión e indicador de evidencia fotográfica.
@@ -47,16 +58,16 @@ El objetivo principal es resolver la dispersión de información y la falta de a
   - Registro de datos clave: Nombre, Tipo de oportunidad, Descripción, Fuente de información, Prioridad, Potencial Comercial, Estado de gestión y Observaciones.
   - **Validaciones en tiempo real:** Control de campos obligatorios con mensajes de error visuales integrados en el `UiState`.
 
-### 4. Recursos Nativos del Dispositivo
-- **Cámara Nativa (CameraX):** Captura e integración de foto de evidencia fotográfica asociada a la oportunidad. La imagen se guarda de forma persistente en el almacenamiento interno del dispositivo.
+### 5. Recursos Nativos del Dispositivo
+- **Cámara Nativa de Evidencias (CameraX):** Captura e integración de fotos para evidencia fotográfica asociada a la oportunidad. La imagen se almacena de forma segura en el almacenamiento interno local (`filesDir`), evitando cierres de aplicación (*crashes*) mediante ejecución en el hilo principal (`Main Thread`) y optimización de memoria con reescalado `inSampleSize`.
 - **Lector de Código QR (ML Kit Barcode Scanning):** Escaneo de códigos QR de eventos para autocompletar automáticamente los datos de la oportunidad.
 - **Geolocalización (GPS Nativo):** Captura de coordenadas geográficas de referencia (Latitud y Longitud) del evento o punto de activación.
 
-### 5. Arquitectura y Persistencia
+### 6. Arquitectura y Persistencia
 - **Patrón MVVM Real (Model-View-ViewModel):** Separación estricta de responsabilidades entre Vista (`Compose`), Estado (`OportunidadUiState` + `StateFlow`), Lógica de Negocio (`OportunidadViewModel`), Repositorio (`OportunidadRepository`) y Acceso a Datos (`OportunidadDao`).
 - **Persistencia Local Offline (Room Database):** Todos los registros permanecen guardados en la base de datos local del dispositivo, persistiendo incluso al reiniciar la aplicación.
 - **Navegación Reactiva:** Implementada con `Jetpack Navigation Compose`.
-- **Indicador de Versión Persistente:** Muestra la versión actual de la app (`v1.2`) en la esquina inferior de todas las pantallas.
+- **Indicador de Versión Persistente:** Muestra la versión unificada de la app (`v1.5`) en la esquina inferior de todas las pantallas.
 
 ---
 
@@ -86,7 +97,7 @@ El objetivo principal es resolver la dispersión de información y la falta de a
 
 1. **Clonar o descargar el repositorio:**
    ```bash
-   git clone <[URL_DEL_REPOSITORIO](https://github.com/R4ft4s/Evaluacion-2---Apps-moviles.git)>
+   git clone https://github.com/R4ft4s/Evaluacion-2---Apps-moviles.git
    ```
 
 2. **Abrir en Android Studio:**
@@ -106,3 +117,10 @@ El objetivo principal es resolver la dispersión de información y la falta de a
 
 ---
 
+## 🧪 Pruebas Unitarias
+
+Para ejecutar la suite de pruebas unitarias implementadas en el proyecto:
+```bash
+./gradlew test
+```
+o desde Android Studio haciendo clic derecho en la carpeta `src/test/java` y seleccionando **Run Tests**.

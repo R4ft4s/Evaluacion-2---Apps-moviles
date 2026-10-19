@@ -164,7 +164,7 @@ fun AppNavigation() {
             modifier = Modifier.align(Alignment.BottomStart)
         ) {
             Text(
-                text = "v1.4",
+                text = "v1.5",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
