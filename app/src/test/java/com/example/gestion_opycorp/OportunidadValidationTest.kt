@@ -1,5 +1,7 @@
 package com.example.gestion_opycorp
 
+import com.example.gestion_opycorp.datos.local.GestionSeguimientoEntity
+import com.example.gestion_opycorp.datos.local.OportunidadDao
 import com.example.gestion_opycorp.datos.local.OportunidadEntity
 import com.example.gestion_opycorp.datos.repository.OportunidadRepository
 import com.example.gestion_opycorp.ui.oportunidad.OportunidadViewModel
@@ -11,6 +13,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -18,7 +21,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
-class FakeOportunidadDao : com.example.gestion_opycorp.datos.local.OportunidadDao {
+class FakeOportunidadDao : OportunidadDao {
     private val list = mutableListOf<OportunidadEntity>()
 
     override fun getOportunidades(): Flow<List<OportunidadEntity>> = flowOf(list)
@@ -72,14 +75,14 @@ class OportunidadValidationTest {
         assertNotNull(uiState.fuenteError)
         assertNotNull(uiState.prioridadError)
         assertNotNull(uiState.potencialError)
-        assertNull(uiState.estadoError) // estado has default value "Evento identificado"
+        assertNull(uiState.estadoError) // default is "Evento identificado"
     }
 
     @Test
     fun `validarYGuardar con campos completos debe tener exito`() {
-        viewModel.onNombreChanged("Evento Test")
+        viewModel.onNombreChanged("Feria Salud Providencia")
         viewModel.onTipoChanged("Feria empresarial")
-        viewModel.onDescripcionChanged("Descripcion de prueba")
+        viewModel.onDescripcionChanged("Feria de bienestar corporativo")
         viewModel.onFuenteChanged("Redes Sociales")
         viewModel.onPrioridadChanged("Alta")
         viewModel.onPotencialChanged("Alto")
@@ -87,5 +90,16 @@ class OportunidadValidationTest {
 
         val esValido = viewModel.validarYGuardar()
         assertTrue(esValido)
+    }
+
+    @Test
+    fun `limpiarFormulario resetea todos los campos`() {
+        viewModel.onNombreChanged("Prueba")
+        viewModel.onOrganizacionChanged("Empresa Test")
+        viewModel.limpiarFormulario()
+
+        val uiState = viewModel.uiState.value
+        assertEquals("", uiState.nombre)
+        assertEquals("", uiState.organizacion)
     }
 }

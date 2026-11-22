@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
@@ -22,6 +24,10 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,18 +53,28 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gestion_opycorp.R
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
-    onRegisterSuccess: (String) -> Unit,
+    onRegisterSuccess: (nombre: String, rol: String) -> Unit,
     onNavigateBack: () -> Unit
 ) {
     var nombre by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var rolSeleccionado by remember { mutableStateOf("Ejecutivo Comercial") }
+    var rolExpanded by remember { mutableStateOf(false) }
+
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val rolesDisponibles = listOf(
+        "Ejecutivo Comercial",
+        "Supervisor Comercial",
+        "Gestión de Activaciones"
+    )
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -70,7 +86,7 @@ fun RegisterScreen(
         ) {
             Card(
                 modifier = Modifier
-                    .fillMaxWidth(0.9f)
+                    .fillMaxWidth(0.92f)
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
@@ -78,18 +94,19 @@ fun RegisterScreen(
                 Column(
                     modifier = Modifier
                         .padding(24.dp)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.logo),
                         contentDescription = "Logo Gestión Atenea",
                         modifier = Modifier
-                            .size(90.dp)
+                            .size(80.dp)
                             .clip(CircleShape)
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
                         text = "Registro de Usuario",
@@ -99,13 +116,13 @@ fun RegisterScreen(
                     )
 
                     Text(
-                        text = "Crea una nueva cuenta en Agencia Atenas",
+                        text = "Crea una nueva cuenta asignando tu perfil",
                         fontSize = 13.sp,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     // Nombre
                     OutlinedTextField(
@@ -121,6 +138,42 @@ fun RegisterScreen(
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Rol Dropdown
+                    ExposedDropdownMenuBox(
+                        expanded = rolExpanded,
+                        onExpandedChange = { rolExpanded = !rolExpanded },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedTextField(
+                            value = rolSeleccionado,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Perfil / Rol de Usuario") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = rolExpanded) },
+                            modifier = Modifier
+                                .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable, true)
+                                .fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = rolExpanded,
+                            onDismissRequest = { rolExpanded = false }
+                        ) {
+                            rolesDisponibles.forEach { rol ->
+                                DropdownMenuItem(
+                                    text = { Text(rol) },
+                                    onClick = {
+                                        rolSeleccionado = rol
+                                        rolExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(10.dp))
 
@@ -204,7 +257,7 @@ fun RegisterScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Button(
                         onClick = {
@@ -215,9 +268,9 @@ fun RegisterScreen(
                                 password.length < 6 -> errorMessage = "La contraseña debe tener al menos 6 caracteres."
                                 password != confirmPassword -> errorMessage = "Las contraseñas no coinciden."
                                 else -> {
-                                    val success = UserStore.registerUser(nombre, email, password)
+                                    val success = UserStore.registerUser(nombre, email, password, rolSeleccionado)
                                     if (success) {
-                                        onRegisterSuccess(nombre)
+                                        onRegisterSuccess(nombre, rolSeleccionado)
                                     } else {
                                         errorMessage = "Este correo ya está registrado. Inicie sesión."
                                     }
@@ -229,7 +282,7 @@ fun RegisterScreen(
                             .height(48.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(text = "Registrarse", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        Text(text = "Registrar Perfil", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -238,10 +291,10 @@ fun RegisterScreen(
                         onClick = onNavigateBack,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(46.dp),
+                            .height(44.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(text = "Ya tengo cuenta / Volver", fontSize = 14.sp)
+                        Text(text = "Volver a Iniciar Sesión", fontSize = 13.sp)
                     }
                 }
             }

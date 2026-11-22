@@ -19,12 +19,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -66,10 +68,21 @@ fun ListaOportunidadesScreen(
     val oportunidades by viewModel.oportunidadesList.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val filterPrioridad by viewModel.filterPrioridad.collectAsState()
+    val filterEstado by viewModel.filterEstado.collectAsState()
 
     var oportunidadParaEliminar by remember { mutableStateOf<OportunidadEntity?>(null) }
 
     val opcionesPrioridad = listOf("Todas", "Alta", "Media", "Baja")
+    val opcionesEstado = listOf(
+        "Todas",
+        "Evento identificado",
+        "Contacto pendiente",
+        "Contacto realizado",
+        "Propuesta enviada",
+        "En espera de respuesta",
+        "Participación confirmada",
+        "Oportunidad descartada"
+    )
 
     Scaffold(
         topBar = {
@@ -108,7 +121,7 @@ fun ListaOportunidadesScreen(
                 value = searchQuery,
                 onValueChange = { viewModel.onSearchQueryChanged(it) },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Buscar por nombre, tipo o fuente...") },
+                placeholder = { Text("Buscar por nombre, organización, tipo...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
@@ -128,27 +141,57 @@ fun ListaOportunidadesScreen(
                 Icon(
                     Icons.Default.FilterList,
                     contentDescription = "Filtro",
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "Prioridad:",
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(vertical = 4.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(vertical = 2.dp)
             ) {
                 items(opcionesPrioridad) { item ->
                     FilterChip(
                         selected = filterPrioridad == item,
                         onClick = { viewModel.onFilterPrioridadChanged(item) },
-                        label = { Text(item, fontSize = 12.sp) }
+                        label = { Text(item, fontSize = 11.sp) }
+                    )
+                }
+            }
+
+            // State Filter Chips (Caso 007D Flow)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.FilterList,
+                    contentDescription = "Filtro Estado",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.secondary
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Estado Flujo 007D:",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(vertical = 2.dp)
+            ) {
+                items(opcionesEstado) { item ->
+                    FilterChip(
+                        selected = filterEstado == item,
+                        onClick = { viewModel.onFilterEstadoChanged(item) },
+                        label = { Text(item, fontSize = 11.sp) }
                     )
                 }
             }
@@ -162,7 +205,7 @@ fun ListaOportunidadesScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No se encontraron oportunidades registradas.",
+                        text = "No se encontraron oportunidades con los filtros seleccionados.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp
                     )
@@ -247,16 +290,26 @@ fun OportunidadCardItem(
                 PrioridadBadge(prioridad = oportunidad.prioridad)
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = "Tipo: ${oportunidad.tipo}",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.primary
-            )
-
             Spacer(modifier = Modifier.height(4.dp))
+
+            if (oportunidad.organizacion.isNotBlank()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Business,
+                        contentDescription = "Organización",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = oportunidad.organizacion,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+            }
 
             Text(
                 text = oportunidad.descripcion,
@@ -268,25 +321,50 @@ fun OportunidadCardItem(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (oportunidad.ubicacion.isNotBlank()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = "Ubicación",
-                        tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = oportunidad.ubicacion,
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.secondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                if (oportunidad.ubicacion.isNotBlank()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = "Ubicación",
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = oportunidad.ubicacion,
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.secondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.height(6.dp))
+
+                if (oportunidad.responsable.isNotBlank()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Responsable",
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = oportunidad.responsable,
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -360,15 +438,21 @@ fun PrioridadBadge(prioridad: String) {
 
 @Composable
 fun EstadoChip(estado: String) {
+    val color = when {
+        estado.contains("confirmada", ignoreCase = true) -> MaterialTheme.colorScheme.primaryContainer
+        estado.contains("descartada", ignoreCase = true) -> MaterialTheme.colorScheme.errorContainer
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+
     Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = color,
         shape = RoundedCornerShape(6.dp)
     ) {
         Text(
             text = estado,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 11.sp,
-            fontWeight = FontWeight.Medium,
+            fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )
     }

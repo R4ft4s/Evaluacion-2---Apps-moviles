@@ -24,15 +24,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
@@ -46,11 +51,13 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -100,9 +107,8 @@ fun OportunidadFormScreen(
         }
     }
 
-    // Dropdown expanded states
+    // Dropdown expanded state
     var tipoExpanded by remember { mutableStateOf(false) }
-    var estadoExpanded by remember { mutableStateOf(false) }
 
     val tiposOportunidad = listOf(
         "Evento corporativo",
@@ -115,7 +121,7 @@ fun OportunidadFormScreen(
         "Otra"
     )
 
-    val estadosGestion = listOf(
+    val estadosFlujo007D = listOf(
         "Evento identificado",
         "Contacto pendiente",
         "Contacto realizado",
@@ -194,6 +200,47 @@ fun OportunidadFormScreen(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Interactive State Step Sequence Bar (Diagrama Caso 007D)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = "Flujo de Estado",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Secuencia de Estado de la Oportunidad (Caso 007D):",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            items(estadosFlujo007D) { est ->
+                                FilterChip(
+                                    selected = uiState.estado.equals(est, ignoreCase = true),
+                                    onClick = { viewModel.onEstadoChanged(est) },
+                                    label = { Text(est, fontSize = 11.sp) }
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // QR Scanner Action Button (ML Kit Barcode Scanning)
                 OutlinedButton(
                     onClick = { showQrScanner = true },
@@ -204,11 +251,19 @@ fun OportunidadFormScreen(
                     Text("Escanear Código QR de Evento (ML Kit)")
                 }
 
+                // SECTION 1: Datos de Oportunidad y Organización
+                Text(
+                    text = "1. Evento, Actividad & Organización",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
                 // Nombre Field
                 OutlinedTextField(
                     value = uiState.nombre,
                     onValueChange = { viewModel.onNombreChanged(it) },
-                    label = { Text("Nombre de la Oportunidad *") },
+                    label = { Text("Evento / Actividad *") },
                     isError = uiState.nombreError != null,
                     supportingText = {
                         if (uiState.nombreError != null) {
@@ -220,6 +275,39 @@ fun OportunidadFormScreen(
                     shape = RoundedCornerShape(12.dp)
                 )
 
+                // Organización Field
+                OutlinedTextField(
+                    value = uiState.organizacion,
+                    onValueChange = { viewModel.onOrganizacionChanged(it) },
+                    label = { Text("Organización / Empresa *") },
+                    leadingIcon = { Icon(Icons.Default.Business, contentDescription = "Empresa") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                // Contacto Ficticio & Teléfono
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = uiState.contactoNombre,
+                        onValueChange = { viewModel.onContactoNombreChanged(it) },
+                        label = { Text("Contacto Ficticio") },
+                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = "Contacto") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = uiState.contactoTelefono,
+                        onValueChange = { viewModel.onContactoTelefonoChanged(it) },
+                        label = { Text("Teléfono / Email") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+
                 // Tipo Dropdown
                 ExposedDropdownMenuBox(
                     expanded = tipoExpanded,
@@ -230,7 +318,7 @@ fun OportunidadFormScreen(
                         value = uiState.tipo,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Tipo de Oportunidad *") },
+                        label = { Text("Tipo de Evento / Oportunidad *") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = tipoExpanded) },
                         isError = uiState.tipoError != null,
                         supportingText = {
@@ -239,7 +327,7 @@ fun OportunidadFormScreen(
                             }
                         },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable, true)
                             .fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     )
@@ -264,7 +352,7 @@ fun OportunidadFormScreen(
                 OutlinedTextField(
                     value = uiState.descripcion,
                     onValueChange = { viewModel.onDescripcionChanged(it) },
-                    label = { Text("Descripción *") },
+                    label = { Text("Descripción del Evento *") },
                     isError = uiState.descripcionError != null,
                     supportingText = {
                         if (uiState.descripcionError != null) {
@@ -277,28 +365,41 @@ fun OportunidadFormScreen(
                     shape = RoundedCornerShape(12.dp)
                 )
 
-                // Fuente de información Field
-                OutlinedTextField(
-                    value = uiState.fuente,
-                    onValueChange = { viewModel.onFuenteChanged(it) },
-                    label = { Text("Fuente de Información *") },
-                    placeholder = { Text("Ej: Redes Sociales, Diario, Búsqueda Directa") },
-                    isError = uiState.fuenteError != null,
-                    supportingText = {
-                        if (uiState.fuenteError != null) {
-                            Text(uiState.fuenteError ?: "", color = MaterialTheme.colorScheme.error)
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
+                // Público Esperado & Fuente
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = uiState.publicoEsperado,
+                        onValueChange = { viewModel.onPublicoEsperadoChanged(it) },
+                        label = { Text("Público Esperado") },
+                        placeholder = { Text("Ej: 500 personas") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = uiState.fuente,
+                        onValueChange = { viewModel.onFuenteChanged(it) },
+                        label = { Text("Fuente de Información *") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+
+                // SECTION 2: Gestiones & Prioridad (Ejecutivo / Supervisor)
+                Text(
+                    text = "2. Gestiones, Supervisión & Prioridades",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 // Prioridad Chips
                 Column {
                     Text(
-                        text = "Prioridad *",
-                        fontSize = 14.sp,
+                        text = "Prioridad (Alta, Media, Baja) *",
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -312,20 +413,13 @@ fun OportunidadFormScreen(
                             )
                         }
                     }
-                    if (uiState.prioridadError != null) {
-                        Text(
-                            text = uiState.prioridadError ?: "",
-                            color = MaterialTheme.colorScheme.error,
-                            fontSize = 12.sp
-                        )
-                    }
                 }
 
                 // Potencial Comercial Chips
                 Column {
                     Text(
                         text = "Potencial Comercial *",
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -339,65 +433,63 @@ fun OportunidadFormScreen(
                             )
                         }
                     }
-                    if (uiState.potencialError != null) {
-                        Text(
-                            text = uiState.potencialError ?: "",
-                            color = MaterialTheme.colorScheme.error,
-                            fontSize = 12.sp
-                        )
-                    }
                 }
 
-                // Estado de gestión Dropdown
-                ExposedDropdownMenuBox(
-                    expanded = estadoExpanded,
-                    onExpandedChange = { estadoExpanded = !estadoExpanded },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                // Responsable Asignado & Próxima Acción
+                OutlinedTextField(
+                    value = uiState.responsable,
+                    onValueChange = { viewModel.onResponsableChanged(it) },
+                    label = { Text("Responsable Asignado (Reasignar)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                OutlinedTextField(
+                    value = uiState.proximaAccion,
+                    onValueChange = { viewModel.onProximaAccionChanged(it) },
+                    label = { Text("Definir Próxima Acción (Seguimiento, Reunión, Respuesta)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                // SECTION 3: Coordinación de Activaciones & Condiciones
+                Text(
+                    text = "3. Coordinación de Activación & Condiciones",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                OutlinedTextField(
+                    value = uiState.condicionesEspacio,
+                    onValueChange = { viewModel.onCondicionesEspacioChanged(it) },
+                    label = { Text("Condiciones de Espacio (Stand, Toldo, Módulo)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
-                        value = uiState.estado,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Estado de Gestión *") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = estadoExpanded) },
-                        isError = uiState.estadoError != null,
-                        supportingText = {
-                            if (uiState.estadoError != null) {
-                                Text(uiState.estadoError ?: "", color = MaterialTheme.colorScheme.error)
-                            }
-                        },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth(),
+                        value = uiState.condicionesCosto,
+                        onValueChange = { viewModel.onCondicionesCostoChanged(it) },
+                        label = { Text("Costo / Presupuesto") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    ExposedDropdownMenu(
-                        expanded = estadoExpanded,
-                        onDismissRequest = { estadoExpanded = false }
-                    ) {
-                        estadosGestion.forEach { est ->
-                            DropdownMenuItem(
-                                text = { Text(est) },
-                                onClick = {
-                                    viewModel.onEstadoChanged(est)
-                                    estadoExpanded = false
-                                }
-                            )
-                        }
-                    }
+                    OutlinedTextField(
+                        value = uiState.condicionesRequisitos,
+                        onValueChange = { viewModel.onCondicionesRequisitosChanged(it) },
+                        label = { Text("Requisitos / Logística") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
                 }
-
-                // Observaciones Field
-                OutlinedTextField(
-                    value = uiState.observaciones,
-                    onValueChange = { viewModel.onObservacionesChanged(it) },
-                    label = { Text("Observaciones") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 2,
-                    maxLines = 4,
-                    shape = RoundedCornerShape(12.dp)
-                )
 
                 // Recurso Nativo: Ubicación GPS
                 Card(
@@ -407,7 +499,7 @@ fun OportunidadFormScreen(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(14.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Default.LocationOn,
@@ -416,21 +508,21 @@ fun OportunidadFormScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Referencia Geográfica (Recurso Nativo GPS)",
+                                text = "Comuna & Ubicación (Recurso Nativo GPS)",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
+                                fontSize = 13.sp
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
                         if (uiState.ubicacion.isNotBlank()) {
                             Text(
                                 text = "Ubicación: ${uiState.ubicacion}",
-                                fontSize = 13.sp,
+                                fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
                         }
 
                         OutlinedButton(
@@ -459,7 +551,7 @@ fun OportunidadFormScreen(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(14.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Default.CameraAlt,
@@ -468,13 +560,13 @@ fun OportunidadFormScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Evidencia Fotográfica (Recurso Nativo Cámara)",
+                                text = "Adjuntar Evidencias (Foto / Cámara Nativa)",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
+                                fontSize = 13.sp
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
                         if (uiState.fotoPath.isNotBlank()) {
                             val bitmap = remember(uiState.fotoPath) { cargarBitmap(uiState.fotoPath) }
@@ -510,14 +602,12 @@ fun OportunidadFormScreen(
                                         )
                                     }
                                 }
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
                             }
                         }
 
                         OutlinedButton(
-                            onClick = {
-                                showCameraCapture = true
-                            },
+                            onClick = { showCameraCapture = true },
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(Icons.Default.CameraAlt, contentDescription = "Tomar foto")
@@ -526,6 +616,42 @@ fun OportunidadFormScreen(
                         }
                     }
                 }
+
+                // SECTION 4: Registrar Resultados & Cierre
+                Text(
+                    text = "4. Registrar Resultados & Cierre de Oportunidad",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                OutlinedTextField(
+                    value = uiState.resultadoActivacion,
+                    onValueChange = { viewModel.onResultadoActivacionChanged(it) },
+                    label = { Text("Resultado de la Activación") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                OutlinedTextField(
+                    value = uiState.impactoEvaluacion,
+                    onValueChange = { viewModel.onImpactoEvaluacionChanged(it) },
+                    label = { Text("Impacto o Evaluación de Desempeño") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                OutlinedTextField(
+                    value = uiState.observaciones,
+                    onValueChange = { viewModel.onObservacionesChanged(it) },
+                    label = { Text("Observaciones Generales") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    maxLines = 4,
+                    shape = RoundedCornerShape(12.dp)
+                )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -543,9 +669,9 @@ fun OportunidadFormScreen(
                     Icon(Icons.Default.Save, contentDescription = "Guardar")
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        if (uiState.guardando) "Guardando..." else "Guardar Oportunidad",
+                        if (uiState.guardando) "Guardando..." else "Guardar Oportunidad (Room & Backend)",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontSize = 15.sp
                     )
                 }
 
@@ -578,13 +704,6 @@ private fun cargarBitmap(fotoPath: String): Bitmap? {
     } catch (_: Exception) {
         null
     }
-}
-
-private fun bitmapToBase64(bitmap: Bitmap): String {
-    val outputStream = ByteArrayOutputStream()
-    bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
-    val byteArray = outputStream.toByteArray()
-    return Base64.encodeToString(byteArray, Base64.DEFAULT)
 }
 
 private fun base64ToBitmap(base64Str: String): Bitmap? {

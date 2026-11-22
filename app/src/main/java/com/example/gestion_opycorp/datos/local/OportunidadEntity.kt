@@ -17,5 +17,16 @@ data class OportunidadEntity(
     val observaciones: String = "",
     val ubicacion: String = "",
     val fotoPath: String = "",
-    val fechaDeteccion: String = ""
+    val fechaDeteccion: String = "",
+    val organizacion: String = "",
+    val contactoNombre: String = "",
+    val contactoTelefono: String = "",
+    val publicoEsperado: String = "",
+    val responsable: String = "Ejecutivo Comercial",
+    val condicionesEspacio: String = "",
+    val condicionesCosto: String = "",
+    val condicionesRequisitos: String = "",
+    val resultadoActivacion: String = "",
+    val impactoEvaluacion: String = "",
+    val proximaAccion: String = "Seguimiento inicial"
 )

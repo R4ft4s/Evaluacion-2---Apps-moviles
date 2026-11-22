@@ -2,17 +2,21 @@ package com.example.gestion_opycorp.ui.auth
 
 import android.util.Patterns
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
@@ -21,6 +25,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,11 +53,11 @@ import com.example.gestion_opycorp.R
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: (String) -> Unit,
+    onLoginSuccess: (nombre: String, rol: String) -> Unit,
     onNavigateToRegister: () -> Unit
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("ejecutivo@atenas.cl") }
+    var password by remember { mutableStateOf("demo123") }
     var passwordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -66,7 +71,7 @@ fun LoginScreen(
         ) {
             Card(
                 modifier = Modifier
-                    .fillMaxWidth(0.9f)
+                    .fillMaxWidth(0.92f)
                     .padding(16.dp),
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
@@ -74,34 +79,75 @@ fun LoginScreen(
                 Column(
                     modifier = Modifier
                         .padding(24.dp)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.logo),
                         contentDescription = "Logo Gestión Atenea",
                         modifier = Modifier
-                            .size(110.dp)
+                            .size(90.dp)
                             .clip(CircleShape)
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
                         text = "Agencia Atenas",
-                        fontSize = 24.sp,
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
 
                     Text(
-                        text = "Gestión Móvil de Oportunidades\ny Activaciones Corporativas",
-                        fontSize = 14.sp,
+                        text = "Gestión Móvil de Oportunidades\ny Activaciones Corporativas (Caso 007D)",
+                        fontSize = 13.sp,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Quick Role Selector Chips
+                    Text(
+                        text = "Selección de Perfil / Demo:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
+                    ) {
+                        FilterChip(
+                            selected = email == "ejecutivo@atenas.cl",
+                            onClick = {
+                                email = "ejecutivo@atenas.cl"
+                                password = "demo123"
+                            },
+                            label = { Text("1. Ejecutivo", fontSize = 11.sp) }
+                        )
+                        FilterChip(
+                            selected = email == "supervisor@atenas.cl",
+                            onClick = {
+                                email = "supervisor@atenas.cl"
+                                password = "demo123"
+                            },
+                            label = { Text("2. Supervisor", fontSize = 11.sp) }
+                        )
+                        FilterChip(
+                            selected = email == "activaciones@atenas.cl",
+                            onClick = {
+                                email = "activaciones@atenas.cl"
+                                password = "demo123"
+                            },
+                            label = { Text("3. Activaciones", fontSize = 11.sp) }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     OutlinedTextField(
                         value = email,
@@ -118,7 +164,7 @@ fun LoginScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     OutlinedTextField(
                         value = password,
@@ -154,7 +200,7 @@ fun LoginScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(18.dp))
 
                     Button(
                         onClick = {
@@ -165,7 +211,7 @@ fun LoginScreen(
                                 else -> {
                                     val user = UserStore.authenticate(email, password)
                                     if (user != null) {
-                                        onLoginSuccess(user.nombre)
+                                        onLoginSuccess(user.nombre, user.rol)
                                     } else {
                                         errorMessage = "Correo o contraseña incorrectos, o cuenta no registrada."
                                     }
@@ -174,32 +220,23 @@ fun LoginScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp),
+                            .height(48.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(text = "Iniciar Sesión", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(text = "Ingresar al Sistema", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     OutlinedButton(
                         onClick = onNavigateToRegister,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(46.dp),
+                            .height(44.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(text = "¿No tienes cuenta? Regístrate aquí", fontSize = 14.sp)
+                        Text(text = "¿No tienes cuenta? Regístrate aquí", fontSize = 13.sp)
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = "Cuenta Demo: ejecutivo@atenas.cl / demo123",
-                        fontSize = 11.sp,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                    )
                 }
             }
         }

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.gestion_opycorp.datos.local.OportunidadEntity
+import com.example.gestion_opycorp.datos.remote.EventoExternoModel
 import com.example.gestion_opycorp.datos.repository.OportunidadRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -41,7 +42,8 @@ class OportunidadViewModel(
                     item.nombre.contains(query, ignoreCase = true) ||
                     item.descripcion.contains(query, ignoreCase = true) ||
                     item.fuente.contains(query, ignoreCase = true) ||
-                    item.tipo.contains(query, ignoreCase = true)
+                    item.tipo.contains(query, ignoreCase = true) ||
+                    item.organizacion.contains(query, ignoreCase = true)
 
             val matchesPrioridad = prioridad == "Todas" || item.prioridad.equals(prioridad, ignoreCase = true)
             val matchesEstado = estado == "Todas" || item.estado.equals(estado, ignoreCase = true)
@@ -53,6 +55,10 @@ class OportunidadViewModel(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
     )
+
+    fun setUsuario(nombre: String, rol: String) {
+        _uiState.update { it.copy(usuarioNombre = nombre, usuarioRol = rol) }
+    }
 
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
@@ -106,6 +112,50 @@ class OportunidadViewModel(
         _uiState.update { it.copy(fotoPath = path) }
     }
 
+    fun onOrganizacionChanged(organizacion: String) {
+        _uiState.update { it.copy(organizacion = organizacion) }
+    }
+
+    fun onContactoNombreChanged(contactoNombre: String) {
+        _uiState.update { it.copy(contactoNombre = contactoNombre) }
+    }
+
+    fun onContactoTelefonoChanged(contactoTelefono: String) {
+        _uiState.update { it.copy(contactoTelefono = contactoTelefono) }
+    }
+
+    fun onPublicoEsperadoChanged(publicoEsperado: String) {
+        _uiState.update { it.copy(publicoEsperado = publicoEsperado) }
+    }
+
+    fun onResponsableChanged(responsable: String) {
+        _uiState.update { it.copy(responsable = responsable) }
+    }
+
+    fun onCondicionesEspacioChanged(condicionesEspacio: String) {
+        _uiState.update { it.copy(condicionesEspacio = condicionesEspacio) }
+    }
+
+    fun onCondicionesCostoChanged(condicionesCosto: String) {
+        _uiState.update { it.copy(condicionesCosto = condicionesCosto) }
+    }
+
+    fun onCondicionesRequisitosChanged(condicionesRequisitos: String) {
+        _uiState.update { it.copy(condicionesRequisitos = condicionesRequisitos) }
+    }
+
+    fun onResultadoActivacionChanged(resultadoActivacion: String) {
+        _uiState.update { it.copy(resultadoActivacion = resultadoActivacion) }
+    }
+
+    fun onImpactoEvaluacionChanged(impactoEvaluacion: String) {
+        _uiState.update { it.copy(impactoEvaluacion = impactoEvaluacion) }
+    }
+
+    fun onProximaAccionChanged(proximaAccion: String) {
+        _uiState.update { it.copy(proximaAccion = proximaAccion) }
+    }
+
     fun cargarOportunidadParaEditar(id: Int) {
         if (id <= 0) {
             limpiarFormulario()
@@ -114,7 +164,7 @@ class OportunidadViewModel(
         viewModelScope.launch {
             val item = repository.getOportunidadByIdDirect(id)
             if (item != null) {
-                _uiState.value = OportunidadUiState(
+                _uiState.value = _uiState.value.copy(
                     id = item.id,
                     nombre = item.nombre,
                     tipo = item.tipo,
@@ -126,6 +176,17 @@ class OportunidadViewModel(
                     observaciones = item.observaciones,
                     ubicacion = item.ubicacion,
                     fotoPath = item.fotoPath,
+                    organizacion = item.organizacion,
+                    contactoNombre = item.contactoNombre,
+                    contactoTelefono = item.contactoTelefono,
+                    publicoEsperado = item.publicoEsperado,
+                    responsable = item.responsable,
+                    condicionesEspacio = item.condicionesEspacio,
+                    condicionesCosto = item.condicionesCosto,
+                    condicionesRequisitos = item.condicionesRequisitos,
+                    resultadoActivacion = item.resultadoActivacion,
+                    impactoEvaluacion = item.impactoEvaluacion,
+                    proximaAccion = item.proximaAccion,
                     guardadoExitosamente = false
                 )
             }
@@ -200,9 +261,20 @@ class OportunidadViewModel(
                     observaciones = currentState.observaciones.trim(),
                     ubicacion = currentState.ubicacion.trim(),
                     fotoPath = currentState.fotoPath.trim(),
-                    fechaDeteccion = if (currentState.id == 0) "2026-03-08" else ""
+                    fechaDeteccion = if (currentState.id == 0) "2026-03-08" else "",
+                    organizacion = currentState.organizacion.trim(),
+                    contactoNombre = currentState.contactoNombre.trim(),
+                    contactoTelefono = currentState.contactoTelefono.trim(),
+                    publicoEsperado = currentState.publicoEsperado.trim(),
+                    responsable = currentState.responsable.ifBlank { currentState.usuarioNombre },
+                    condicionesEspacio = currentState.condicionesEspacio.trim(),
+                    condicionesCosto = currentState.condicionesCosto.trim(),
+                    condicionesRequisitos = currentState.condicionesRequisitos.trim(),
+                    resultadoActivacion = currentState.resultadoActivacion.trim(),
+                    impactoEvaluacion = currentState.impactoEvaluacion.trim(),
+                    proximaAccion = currentState.proximaAccion.trim()
                 )
-                repository.saveOportunidad(entity)
+                repository.saveOportunidad(entity, currentState.usuarioNombre)
                 _uiState.update {
                     it.copy(
                         guardando = false,
@@ -214,12 +286,42 @@ class OportunidadViewModel(
         return esValido
     }
 
+    // Consumo de API REST Externa con Retrofit
+    fun cargarEventosExternosApi() {
+        _uiState.update { it.copy(cargandoEventosExternos = true, mensajeApi = null) }
+        viewModelScope.launch {
+            val eventos = repository.fetchEventosExternos()
+            _uiState.update {
+                it.copy(
+                    eventosExternos = eventos,
+                    cargandoEventosExternos = false,
+                    mensajeApi = "Se cargaron ${eventos.size} eventos desde la API REST"
+                )
+            }
+        }
+    }
+
+    fun importarEventoExterno(evento: EventoExternoModel) {
+        viewModelScope.launch {
+            val usuario = _uiState.value.usuarioNombre
+            repository.importarEventoExternoComoOportunidad(evento, usuario)
+            _uiState.update {
+                it.copy(mensajeApi = "¡Evento '${evento.nombre}' importado con éxito como Oportunidad!")
+            }
+        }
+    }
+
     fun resetGuardadoExitosamente() {
         _uiState.update { it.copy(guardadoExitosamente = false) }
     }
 
     fun limpiarFormulario() {
-        _uiState.value = OportunidadUiState()
+        _uiState.update {
+            OportunidadUiState(
+                usuarioNombre = it.usuarioNombre,
+                usuarioRol = it.usuarioRol
+            )
+        }
     }
 
     fun eliminarOportunidad(id: Int) {

@@ -30,6 +30,7 @@ import com.example.gestion_opycorp.datos.repository.OportunidadRepository
 import com.example.gestion_opycorp.ui.auth.LoginScreen
 import com.example.gestion_opycorp.ui.auth.RegisterScreen
 import com.example.gestion_opycorp.ui.menu.MenuScreen
+import com.example.gestion_opycorp.ui.oportunidad.CatalogoEventosScreen
 import com.example.gestion_opycorp.ui.oportunidad.ListaOportunidadesScreen
 import com.example.gestion_opycorp.ui.oportunidad.OportunidadFormScreen
 import com.example.gestion_opycorp.ui.oportunidad.OportunidadViewModel
@@ -42,7 +43,10 @@ fun AppNavigation() {
 
     // Initialize Database and Repository
     val database = AppDatabase.getDatabase(context)
-    val repository = OportunidadRepository(database.oportunidadDao())
+    val repository = OportunidadRepository(
+        dao = database.oportunidadDao(),
+        seguimientoDao = database.gestionSeguimientoDao()
+    )
     val viewModelFactory = OportunidadViewModelFactory(repository)
 
     val oportunidadViewModel: OportunidadViewModel = viewModel(factory = viewModelFactory)
@@ -79,8 +83,11 @@ fun AppNavigation() {
             // 1. Iniciar sesión
             composable("login") {
                 LoginScreen(
-                    onLoginSuccess = { usuarioNombre ->
-                        navController.navigate("menu/${usuarioNombre.ifBlank { "Ejecutivo Comercial" }}") {
+                    onLoginSuccess = { usuarioNombre, rol ->
+                        oportunidadViewModel.setUsuario(usuarioNombre, rol)
+                        val safeNombre = if (usuarioNombre.isBlank()) "Usuario" else usuarioNombre
+                        val safeRol = if (rol.isBlank()) "Ejecutivo Comercial" else rol
+                        navController.navigate("menu/$safeNombre/$safeRol") {
                             popUpTo("login") { inclusive = true }
                         }
                     },
@@ -93,8 +100,11 @@ fun AppNavigation() {
             // 2. Registro de Usuario Nuevo
             composable("register") {
                 RegisterScreen(
-                    onRegisterSuccess = { usuarioNombre ->
-                        navController.navigate("menu/${usuarioNombre.ifBlank { "Nuevo Usuario" }}") {
+                    onRegisterSuccess = { usuarioNombre, rol ->
+                        oportunidadViewModel.setUsuario(usuarioNombre, rol)
+                        val safeNombre = if (usuarioNombre.isBlank()) "Nuevo Usuario" else usuarioNombre
+                        val safeRol = if (rol.isBlank()) "Ejecutivo Comercial" else rol
+                        navController.navigate("menu/$safeNombre/$safeRol") {
                             popUpTo("login") { inclusive = true }
                         }
                     },
@@ -106,12 +116,17 @@ fun AppNavigation() {
 
             // 3. Menú principal
             composable(
-                route = "menu/{usuario}",
-                arguments = listOf(navArgument("usuario") { type = NavType.StringType })
+                route = "menu/{usuario}/{rol}",
+                arguments = listOf(
+                    navArgument("usuario") { type = NavType.StringType },
+                    navArgument("rol") { type = NavType.StringType }
+                )
             ) { backStackEntry ->
                 val usuario = backStackEntry.arguments?.getString("usuario") ?: "Ejecutivo Comercial"
+                val rol = backStackEntry.arguments?.getString("rol") ?: "Ejecutivo Comercial"
                 MenuScreen(
                     usuarioNombre = usuario,
+                    usuarioRol = rol,
                     viewModel = oportunidadViewModel,
                     onNavigateToLista = {
                         navController.navigate("lista_oportunidades")
@@ -119,15 +134,18 @@ fun AppNavigation() {
                     onNavigateToCrear = {
                         navController.navigate("form_oportunidad/0")
                     },
+                    onNavigateToCatalogoApi = {
+                        navController.navigate("catalogo_eventos_api")
+                    },
                     onLogout = {
                         navController.navigate("login") {
-                            popUpTo("menu/$usuario") { inclusive = true }
+                            popUpTo("menu/$usuario/$rol") { inclusive = true }
                         }
                     }
                 )
             }
 
-            // 4. Lista de Oportunidades
+            // 4. Lista & Supervisión de Oportunidades
             composable("lista_oportunidades") {
                 ListaOportunidadesScreen(
                     viewModel = oportunidadViewModel,
@@ -140,7 +158,17 @@ fun AppNavigation() {
                 )
             }
 
-            // 5. Formulario de Oportunidad (Crear / Editar)
+            // 5. Catálogo de Eventos Externos (API REST Retrofit)
+            composable("catalogo_eventos_api") {
+                CatalogoEventosScreen(
+                    viewModel = oportunidadViewModel,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+
+            // 6. Formulario de Oportunidad (Crear / Editar / Gestión de Activación)
             composable(
                 route = "form_oportunidad/{id}",
                 arguments = listOf(navArgument("id") { type = NavType.IntType })

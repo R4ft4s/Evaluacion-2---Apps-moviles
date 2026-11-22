@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.PriorityHigh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -30,6 +31,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -50,16 +52,18 @@ import com.example.gestion_opycorp.ui.oportunidad.OportunidadViewModel
 @Composable
 fun MenuScreen(
     usuarioNombre: String,
+    usuarioRol: String,
     viewModel: OportunidadViewModel,
     onNavigateToLista: () -> Unit,
     onNavigateToCrear: () -> Unit,
+    onNavigateToCatalogoApi: () -> Unit,
     onLogout: () -> Unit
 ) {
     val oportunidades by viewModel.oportunidadesList.collectAsState()
 
     val totalOportunidades = oportunidades.size
     val altaPrioridad = oportunidades.count { it.prioridad.equals("Alta", ignoreCase = true) }
-    val confirmadas = oportunidades.count { it.estado.contains("confirmada", ignoreCase = true) }
+    val confirmadas = oportunidades.count { it.estado.contains("confirmada", ignoreCase = true) || it.estado.contains("Cerrada", ignoreCase = true) }
 
     Scaffold(
         topBar = {
@@ -85,7 +89,7 @@ fun MenuScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Header card
+            // Header card with User Role Badge
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -117,15 +121,28 @@ fun MenuScreen(
                         Text(
                             text = usuarioNombre,
                             fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = "Perfil: $usuarioRol",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
                     }
                 }
             }
 
             Text(
-                text = "Resumen de Oportunidades",
-                fontSize = 18.sp,
+                text = "Resumen de Oportunidades & Activaciones",
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -155,16 +172,16 @@ fun MenuScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Módulos y Funciones",
-                fontSize = 18.sp,
+                text = "Módulos del Sistema (Caso 007D)",
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            // Main Actions
+            // Module 1: Lista & Supervisión
             OutlinedCard(
                 onClick = onNavigateToLista,
                 modifier = Modifier.fillMaxWidth(),
@@ -185,12 +202,12 @@ fun MenuScreen(
                     Spacer(modifier = Modifier.size(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Lista de Oportunidades",
+                            text = "Lista & Supervisión de Oportunidades",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
+                            fontSize = 15.sp
                         )
                         Text(
-                            text = "Consultar, filtrar y editar oportunidades guardadas localmente",
+                            text = "Consultar estados, filtrar por prioridad, reasignar responsables e historial de cambios",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -198,6 +215,7 @@ fun MenuScreen(
                 }
             }
 
+            // Module 2: Registrar Oportunidad
             OutlinedCard(
                 onClick = onNavigateToCrear,
                 modifier = Modifier.fillMaxWidth(),
@@ -218,12 +236,12 @@ fun MenuScreen(
                     Spacer(modifier = Modifier.size(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Nueva Oportunidad",
+                            text = "Registrar Nueva Oportunidad",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
+                            fontSize = 15.sp
                         )
                         Text(
-                            text = "Registrar un nuevo evento con validaciones y recursos nativos",
+                            text = "Formulario completo con fotos (CameraX), geolocalización (GPS) y gestiones comercial",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -231,7 +249,41 @@ fun MenuScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Module 3: Catálogo API REST (Retrofit)
+            OutlinedCard(
+                onClick = onNavigateToCatalogoApi,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.CloudDownload,
+                        contentDescription = "Catálogo API REST",
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.size(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Catálogo Eventos Externos (API REST Retrofit)",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                        Text(
+                            text = "Consulta de eventos públicos externos e importación directa en 1-click a la app",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             Button(
                 onClick = onLogout,
