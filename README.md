@@ -65,12 +65,15 @@ La solución centraliza el flujo completo descrito en el **Diagrama del Caso 007
    - **Activaciones:** `activaciones@atenas.cl` / `demo123`
 
 ### 2. Microservicio Spring Boot Backend (`backend-spring-boot/`)
-1. Abrir la carpeta `backend-spring-boot` con IntelliJ IDEA o Maven.
-2. Ejecutar el proyecto con Maven:
+1. Abrir `backend-spring-boot/pom.xml` en IntelliJ IDEA y configurar un JDK 17 o superior, o instalar Maven y Java 17+.
+2. Desde la carpeta `backend-spring-boot`, ejecutar:
    ```bash
    mvn spring-boot:run
    ```
-3. El microservicio estará disponible en `http://localhost:8080/api/`.
+3. La API estará disponible en `http://localhost:8080`. Rutas principales:
+   - `GET http://localhost:8080/api/eventos-externos`
+   - `GET http://localhost:8080/api/oportunidades`
+4. Para conectar Android en el emulador, inicia el backend en el mismo computador; la app usa `http://10.0.2.2:8080/api/` para acceder al host. En un dispositivo físico, ambos deben estar en la misma red Wi-Fi y hay que reemplazar `10.0.2.2` en `RetrofitClient.kt` por la IP local del computador.
 
 ---
 
