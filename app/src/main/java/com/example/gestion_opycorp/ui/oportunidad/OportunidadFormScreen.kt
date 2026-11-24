@@ -150,6 +150,14 @@ fun OportunidadFormScreen(
         }
     }
 
+    val esEjecutivo = uiState.usuarioRol.equals("Ejecutivo Comercial", ignoreCase = true)
+    val esSupervisor = uiState.usuarioRol.equals("Supervisor Comercial", ignoreCase = true)
+    val esActivaciones = uiState.usuarioRol.equals("Gestión de Activaciones", ignoreCase = true)
+
+    val puedeEditarDatosEvento = esEjecutivo || esSupervisor
+    val puedeReasignarResponsable = esSupervisor
+    val puedeEditarActivaciones = esActivaciones || esSupervisor
+
     if (showQrScanner) {
         QrScannerDialog(
             onQrScanned = { scannedValue ->
@@ -200,6 +208,48 @@ fun OportunidadFormScreen(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // User Role Active Banner Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Rol",
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "Perfil Activo: ${uiState.usuarioRol} (${uiState.usuarioNombre})",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            val descripcionRol = when {
+                                esSupervisor -> "Funciones Habilitadas: Evaluar oportunidades, reasignar responsable y supervisión total."
+                                esActivaciones -> "Funciones Habilitadas: Coordinar participación, condiciones de espacio/costos, foto evidencia (Cámara) y resultados."
+                                else -> "Funciones Habilitadas: Registrar evento, organización, contacto ficticio y propuesta comercial."
+                            }
+                            Text(
+                                text = descripcionRol,
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.9f)
+                            )
+                        }
+                    }
+                }
+
                 // Interactive State Step Sequence Bar (Diagrama Caso 007D)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -244,7 +294,8 @@ fun OportunidadFormScreen(
                 // QR Scanner Action Button (ML Kit Barcode Scanning)
                 OutlinedButton(
                     onClick = { showQrScanner = true },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = puedeEditarDatosEvento
                 ) {
                     Icon(Icons.Default.QrCodeScanner, contentDescription = "Escanear QR")
                     Spacer(modifier = Modifier.width(8.dp))
@@ -253,7 +304,7 @@ fun OportunidadFormScreen(
 
                 // SECTION 1: Datos de Oportunidad y Organización
                 Text(
-                    text = "1. Evento, Actividad & Organización",
+                    text = "1. Evento, Actividad & Organización ${if (!puedeEditarDatosEvento) "(Solo lectura para " + uiState.usuarioRol + ")" else ""}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
                     color = MaterialTheme.colorScheme.primary
@@ -264,10 +315,13 @@ fun OportunidadFormScreen(
                     value = uiState.nombre,
                     onValueChange = { viewModel.onNombreChanged(it) },
                     label = { Text("Evento / Actividad *") },
+                    enabled = puedeEditarDatosEvento,
                     isError = uiState.nombreError != null,
                     supportingText = {
                         if (uiState.nombreError != null) {
                             Text(uiState.nombreError ?: "", color = MaterialTheme.colorScheme.error)
+                        } else if (!puedeEditarDatosEvento) {
+                            Text("Sección reservada para Ejecutivo Comercial o Supervisor", fontSize = 11.sp)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -280,6 +334,7 @@ fun OportunidadFormScreen(
                     value = uiState.organizacion,
                     onValueChange = { viewModel.onOrganizacionChanged(it) },
                     label = { Text("Organización / Empresa *") },
+                    enabled = puedeEditarDatosEvento,
                     leadingIcon = { Icon(Icons.Default.Business, contentDescription = "Empresa") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
@@ -292,6 +347,7 @@ fun OportunidadFormScreen(
                         value = uiState.contactoNombre,
                         onValueChange = { viewModel.onContactoNombreChanged(it) },
                         label = { Text("Contacto Ficticio") },
+                        enabled = puedeEditarDatosEvento,
                         leadingIcon = { Icon(Icons.Default.Person, contentDescription = "Contacto") },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
@@ -302,6 +358,7 @@ fun OportunidadFormScreen(
                         value = uiState.contactoTelefono,
                         onValueChange = { viewModel.onContactoTelefonoChanged(it) },
                         label = { Text("Teléfono / Email") },
+                        enabled = puedeEditarDatosEvento,
                         modifier = Modifier.weight(1f),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
@@ -310,14 +367,15 @@ fun OportunidadFormScreen(
 
                 // Tipo Dropdown
                 ExposedDropdownMenuBox(
-                    expanded = tipoExpanded,
-                    onExpandedChange = { tipoExpanded = !tipoExpanded },
+                    expanded = tipoExpanded && puedeEditarDatosEvento,
+                    onExpandedChange = { if (puedeEditarDatosEvento) tipoExpanded = !tipoExpanded },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     OutlinedTextField(
                         value = uiState.tipo,
                         onValueChange = {},
                         readOnly = true,
+                        enabled = puedeEditarDatosEvento,
                         label = { Text("Tipo de Evento / Oportunidad *") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = tipoExpanded) },
                         isError = uiState.tipoError != null,
@@ -333,7 +391,7 @@ fun OportunidadFormScreen(
                     )
 
                     ExposedDropdownMenu(
-                        expanded = tipoExpanded,
+                        expanded = tipoExpanded && puedeEditarDatosEvento,
                         onDismissRequest = { tipoExpanded = false }
                     ) {
                         tiposOportunidad.forEach { item ->
@@ -353,6 +411,7 @@ fun OportunidadFormScreen(
                     value = uiState.descripcion,
                     onValueChange = { viewModel.onDescripcionChanged(it) },
                     label = { Text("Descripción del Evento *") },
+                    enabled = puedeEditarDatosEvento,
                     isError = uiState.descripcionError != null,
                     supportingText = {
                         if (uiState.descripcionError != null) {
@@ -371,6 +430,7 @@ fun OportunidadFormScreen(
                         value = uiState.publicoEsperado,
                         onValueChange = { viewModel.onPublicoEsperadoChanged(it) },
                         label = { Text("Público Esperado") },
+                        enabled = puedeEditarDatosEvento,
                         placeholder = { Text("Ej: 500 personas") },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
@@ -381,6 +441,7 @@ fun OportunidadFormScreen(
                         value = uiState.fuente,
                         onValueChange = { viewModel.onFuenteChanged(it) },
                         label = { Text("Fuente de Información *") },
+                        enabled = puedeEditarDatosEvento,
                         modifier = Modifier.weight(1f),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
@@ -408,7 +469,8 @@ fun OportunidadFormScreen(
                         opcionesPrioridad.forEach { prio ->
                             FilterChip(
                                 selected = uiState.prioridad.equals(prio, ignoreCase = true),
-                                onClick = { viewModel.onPrioridadChanged(prio) },
+                                onClick = { if (puedeEditarDatosEvento) viewModel.onPrioridadChanged(prio) },
+                                enabled = puedeEditarDatosEvento,
                                 label = { Text(prio) }
                             )
                         }
@@ -428,18 +490,25 @@ fun OportunidadFormScreen(
                         opcionesPotencial.forEach { pot ->
                             FilterChip(
                                 selected = uiState.potencial.equals(pot, ignoreCase = true),
-                                onClick = { viewModel.onPotencialChanged(pot) },
+                                onClick = { if (puedeEditarDatosEvento) viewModel.onPotencialChanged(pot) },
+                                enabled = puedeEditarDatosEvento,
                                 label = { Text(pot) }
                             )
                         }
                     }
                 }
 
-                // Responsable Asignado & Próxima Acción
+                // Responsable Asignado & Próxima Acción (Solo Supervisor puede Reasignar Responsable)
                 OutlinedTextField(
                     value = uiState.responsable,
                     onValueChange = { viewModel.onResponsableChanged(it) },
-                    label = { Text("Responsable Asignado (Reasignar)") },
+                    label = { Text("Responsable Asignado") },
+                    enabled = puedeReasignarResponsable,
+                    supportingText = {
+                        if (!puedeReasignarResponsable) {
+                            Text("Campo de Reasignación reservado exclusivamente al Supervisor Comercial", fontSize = 11.sp)
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp)
@@ -449,6 +518,7 @@ fun OportunidadFormScreen(
                     value = uiState.proximaAccion,
                     onValueChange = { viewModel.onProximaAccionChanged(it) },
                     label = { Text("Definir Próxima Acción (Seguimiento, Reunión, Respuesta)") },
+                    enabled = puedeEditarDatosEvento,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp)
@@ -456,7 +526,7 @@ fun OportunidadFormScreen(
 
                 // SECTION 3: Coordinación de Activaciones & Condiciones
                 Text(
-                    text = "3. Coordinación de Activación & Condiciones",
+                    text = "3. Coordinación de Activación & Condiciones ${if (!puedeEditarActivaciones) "(Reservado a Gestión de Activaciones)" else ""}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
                     color = MaterialTheme.colorScheme.primary
@@ -466,6 +536,12 @@ fun OportunidadFormScreen(
                     value = uiState.condicionesEspacio,
                     onValueChange = { viewModel.onCondicionesEspacioChanged(it) },
                     label = { Text("Condiciones de Espacio (Stand, Toldo, Módulo)") },
+                    enabled = puedeEditarActivaciones,
+                    supportingText = {
+                        if (!puedeEditarActivaciones) {
+                            Text("Sección editable solo por el módulo Gestión de Activaciones o Supervisor", fontSize = 11.sp)
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp)
@@ -476,6 +552,7 @@ fun OportunidadFormScreen(
                         value = uiState.condicionesCosto,
                         onValueChange = { viewModel.onCondicionesCostoChanged(it) },
                         label = { Text("Costo / Presupuesto") },
+                        enabled = puedeEditarActivaciones,
                         modifier = Modifier.weight(1f),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
@@ -485,6 +562,7 @@ fun OportunidadFormScreen(
                         value = uiState.condicionesRequisitos,
                         onValueChange = { viewModel.onCondicionesRequisitosChanged(it) },
                         label = { Text("Requisitos / Logística") },
+                        enabled = puedeEditarActivaciones,
                         modifier = Modifier.weight(1f),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
@@ -534,6 +612,7 @@ fun OportunidadFormScreen(
                                     )
                                 )
                             },
+                            enabled = puedeEditarActivaciones,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(Icons.Default.LocationOn, contentDescription = "Obtener GPS")
@@ -587,6 +666,7 @@ fun OportunidadFormScreen(
                                     )
                                     IconButton(
                                         onClick = { viewModel.onFotoPathChanged("") },
+                                        enabled = puedeEditarActivaciones,
                                         modifier = Modifier
                                             .align(Alignment.TopEnd)
                                             .padding(8.dp)
@@ -608,6 +688,7 @@ fun OportunidadFormScreen(
 
                         OutlinedButton(
                             onClick = { showCameraCapture = true },
+                            enabled = puedeEditarActivaciones,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(Icons.Default.CameraAlt, contentDescription = "Tomar foto")
@@ -619,7 +700,7 @@ fun OportunidadFormScreen(
 
                 // SECTION 4: Registrar Resultados & Cierre
                 Text(
-                    text = "4. Registrar Resultados & Cierre de Oportunidad",
+                    text = "4. Registrar Resultados & Cierre de Oportunidad ${if (!puedeEditarActivaciones) "(Reservado a Gestión de Activaciones)" else ""}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
                     color = MaterialTheme.colorScheme.primary
@@ -629,6 +710,7 @@ fun OportunidadFormScreen(
                     value = uiState.resultadoActivacion,
                     onValueChange = { viewModel.onResultadoActivacionChanged(it) },
                     label = { Text("Resultado de la Activación") },
+                    enabled = puedeEditarActivaciones,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp)
@@ -638,6 +720,7 @@ fun OportunidadFormScreen(
                     value = uiState.impactoEvaluacion,
                     onValueChange = { viewModel.onImpactoEvaluacionChanged(it) },
                     label = { Text("Impacto o Evaluación de Desempeño") },
+                    enabled = puedeEditarActivaciones,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp)
@@ -647,6 +730,7 @@ fun OportunidadFormScreen(
                     value = uiState.observaciones,
                     onValueChange = { viewModel.onObservacionesChanged(it) },
                     label = { Text("Observaciones Generales") },
+                    enabled = puedeEditarActivaciones || puedeEditarDatosEvento,
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2,
                     maxLines = 4,
